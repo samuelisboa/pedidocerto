@@ -1,0 +1,278 @@
+@startuml diagrama-classes
+title PedidoCerto - Diagrama de classes do domínio (Etapa 2)
+
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam class {
+  BackgroundColor #FFFDF9
+  BorderColor #1F1B2E
+  ArrowColor #1F1B2E
+  HeaderBackgroundColor #F1E9DD
+}
+skinparam stereotypeCBackgroundColor #FF7A59
+hide empty members
+
+legend right
+  - privado   + público   ~ restrito ao pacote (só o PedidoEntity chama)
+  Todas as entidades usam @Getter e construtor protegido para o JPA; não há setters.
+  Os atributos são alterados apenas pelos métodos modificadores listados.
+endlegend
+
+package "cliente" {
+  class ClienteEntity <<Entity>> {
+    -id: Long
+    -nome: String
+    -telefone: String
+    -email: String
+    -canalPreferencial: CanalContato
+    -ativo: boolean
+    -criadoEm: LocalDateTime
+    +atualizarContato(telefone: String, email: String): void
+    +alterarCanalPreferencial(canal: CanalContato): void
+    +inativar(): void
+    +reativar(): void
+  }
+}
+
+package "funcionario" {
+  class FuncionarioEntity <<Entity>> {
+    -id: Long
+    -nome: String
+    -setor: SetorFuncionario
+    -ativo: boolean
+    +transferirParaSetor(setor: SetorFuncionario): void
+    +inativar(): void
+    +reativar(): void
+  }
+}
+
+package "produto" {
+  class ProdutoEntity <<Entity>> {
+    -id: Long
+    -nome: String
+    -descricao: String
+    -precoBase: BigDecimal
+    -horasProducaoPorUnidade: BigDecimal
+    -ativo: boolean
+    +reajustarPreco(novoPreco: BigDecimal): void
+    +ajustarTempoDeProducao(horasPorUnidade: BigDecimal): void
+    +alterarDescricao(novaDescricao: String): void
+    +vincularMaterial(material: MaterialEntity): void
+    +desvincularMaterial(material: MaterialEntity): void
+    +inativar(): void
+    +reativar(): void
+  }
+}
+
+package "material" {
+  class MaterialEntity <<Entity>> {
+    -id: Long
+    -nome: String
+    -unidadeMedida: String
+    -quantidadeEstoque: BigDecimal
+    -estoqueMinimo: BigDecimal
+    -ativo: boolean
+    +repor(quantidade: BigDecimal): void
+    +baixar(quantidade: BigDecimal): void
+    +ajustarEstoqueMinimo(novoMinimo: BigDecimal): void
+    +inativar(): void
+    +reativar(): void
+  }
+  class NecessidadeMaterialEntity <<Entity>> {
+    -id: Long
+    -quantidadeNecessaria: BigDecimal
+    -quantidadeConsumida: BigDecimal
+    +ajustarQuantidadeNecessaria(novaQuantidade: BigDecimal): void
+    +consumir(quantidade: BigDecimal): void
+  }
+}
+
+package "agenda" {
+  class CapacidadeDiaEntity <<Entity>> {
+    -id: Long
+    -data: LocalDate
+    -capacidadeHoras: BigDecimal
+    -horasComprometidas: BigDecimal
+    +reservar(horas: BigDecimal): void
+    +liberar(horas: BigDecimal): void
+    +redefinirCapacidade(novaCapacidade: BigDecimal): void
+  }
+}
+
+package "producao" {
+  class EtapaProducaoEntity <<Entity>> {
+    -id: Long
+    -nome: String
+    -ordem: int
+    -irreversivel: boolean
+    +reordenar(novaOrdem: int): void
+    +marcarComoIrreversivel(): void
+    +marcarComoReversivel(): void
+  }
+  class ExecucaoEtapaEntity <<Entity>> {
+    -id: Long
+    -status: StatusEtapa
+    -percentualConcluido: int
+    -iniciadaEm: LocalDateTime
+    -concluidaEm: LocalDateTime
+    +iniciar(responsavel: FuncionarioEntity, quando: LocalDateTime): void
+    +atualizarProgresso(novoPercentual: int): void
+    +concluir(quando: LocalDateTime): void
+  }
+}
+
+package "pedido" {
+  class PedidoEntity <<Entity>> {
+    -id: Long
+    -numero: String
+    -status: StatusPedido
+    -canalOrigem: CanalContato
+    -criadoEm: LocalDateTime
+    -aprovadoEm: LocalDateTime
+    -dataEntregaPrevista: LocalDateTime
+    -valorTotal: BigDecimal
+    -versao: int
+    -motivoCancelamento: String
+    +adicionarItem(produto: ProdutoEntity, quantidade: int, personalizacao: String): ItemPedidoEntity
+    +removerItem(item: ItemPedidoEntity): void
+    +alterarQuantidadeDoItem(item: ItemPedidoEntity, novaQuantidade: int): void
+    +alterarPersonalizacaoDoItem(item: ItemPedidoEntity, novaPersonalizacao: String): void
+    +reagendarEntrega(novaData: LocalDateTime, agora: LocalDateTime): void
+    +aprovar(agora: LocalDateTime): void
+    +registrarPagamento(tipo, forma, valor, pagoEm, registradoPor): PagamentoEntity
+    +planejarEtapa(etapa: EtapaProducaoEntity): ExecucaoEtapaEntity
+    +definirNecessidadeDeMaterial(material: MaterialEntity, quantidade: BigDecimal): NecessidadeMaterialEntity
+    +iniciarProducao(): void
+    +marcarComoPronto(): void
+    +confirmarEntrega(responsavel: FuncionarioEntity, quando: LocalDateTime): void
+    +cancelar(motivo: String): void
+    +solicitarAlteracao(descricao: String, solicitadaPor: FuncionarioEntity, agora: LocalDateTime): AlteracaoPedidoEntity
+    +aprovarAlteracao(alteracao: AlteracaoPedidoEntity, quando: LocalDateTime): void
+    +confirmarLeituraDaAlteracao(alteracao, funcionario, quando): void
+    +valorPago(): BigDecimal
+    +saldoPendente(): BigDecimal
+  }
+  class ItemPedidoEntity <<Entity>> {
+    -id: Long
+    -quantidade: int
+    -precoUnitario: BigDecimal
+    -personalizacao: String
+    ~alterarQuantidade(novaQuantidade: int): void
+    ~alterarPersonalizacao(novaPersonalizacao: String): void
+    +subtotal(): BigDecimal
+  }
+  class AlteracaoPedidoEntity <<Entity>> {
+    -id: Long
+    -descricao: String
+    -solicitadaEm: LocalDateTime
+    -zona: ZonaAlteracao
+    -status: StatusAlteracao
+    -custoAdicional: BigDecimal
+    -diasAdicionais: int
+    -aprovadaEm: LocalDateTime
+    -confirmadaEm: LocalDateTime
+    -motivoRecusa: String
+    +proporCusto(custoAdicional: BigDecimal, diasAdicionais: int): void
+    +recusar(motivo: String): void
+    ~aprovarPeloCliente(quando: LocalDateTime): void
+    ~confirmarLeituraDaProducao(funcionario: FuncionarioEntity, quando: LocalDateTime): void
+  }
+  class EntregaEntity <<Entity>> {
+    -id: Long
+    -modalidade: ModalidadeEntrega
+    -enderecoEntrega: String
+    -saldoConferido: boolean
+    -entregueEm: LocalDateTime
+    +definirModalidade(modalidade: ModalidadeEntrega, endereco: String): void
+    ~registrar(responsavel: FuncionarioEntity, saldoPendente: BigDecimal, quando: LocalDateTime): void
+  }
+  class PoliticaAlteracaoEntity <<Entity>> {
+    -id: Long
+    -nome: String
+    -horasSemCusto: int
+    -percentualLimiteComCusto: int
+    -horasFechamentoAntesDaEntrega: int
+    -ativa: boolean
+    +ajustarJanelas(horasSemCusto: int, percentualLimite: int, horasFechamento: int): void
+    +ativar(): void
+    +desativar(): void
+    +classificar(agora, aprovadoEm, entregaPrevista, percentualProduzido, etapaIrreversivelConcluida): ZonaAlteracao
+  }
+}
+
+package "pagamento" {
+  class PagamentoEntity <<Entity>> {
+    -id: Long
+    -tipo: TipoPagamento
+    -forma: FormaPagamento
+    -valor: BigDecimal
+    -pagoEm: LocalDateTime
+    -conferido: boolean
+    -conferidoEm: LocalDateTime
+    +conferir(responsavel: FuncionarioEntity, quando: LocalDateTime): void
+  }
+}
+
+package "atendimento" {
+  class ContatoEntity <<Entity>> {
+    -id: Long
+    -canal: CanalContato
+    -mensagem: String
+    -recebidoEm: LocalDateTime
+    -foraDoHorario: boolean
+    -tratadoEm: LocalDateTime
+    +vincularAoPedido(pedido: PedidoEntity): void
+    +marcarComoTratado(funcionario: FuncionarioEntity, quando: LocalDateTime): void
+  }
+}
+
+package "enumerações" {
+  enum CanalContato { WHATSAPP\nINSTAGRAM\nPRESENCIAL }
+  enum SetorFuncionario { ATENDIMENTO\nPRODUCAO\nADMINISTRACAO\nENTREGAS }
+  enum StatusPedido { ORCAMENTO\nAPROVADO\nEM_PRODUCAO\nPRONTO\nENTREGUE\nCANCELADO }
+  enum ZonaAlteracao { VERDE\nAMARELA\nVERMELHA }
+  enum StatusAlteracao { SOLICITADA\nAGUARDANDO_CLIENTE\nAPROVADA_PELO_CLIENTE\nCONFIRMADA_PELA_PRODUCAO\nRECUSADA }
+  enum ModalidadeEntrega { RETIRADA\nDOMICILIO }
+  enum TipoPagamento { SINAL\nPARCIAL\nSALDO }
+  enum FormaPagamento { PIX\nDINHEIRO\nCARTAO\nTRANSFERENCIA }
+  enum StatusEtapa { PENDENTE\nEM_ANDAMENTO\nCONCLUIDA }
+}
+
+' ---- agregado Pedido (composição: os filhos não existem sem o pedido) ----
+PedidoEntity "1" *-- "0..*" ItemPedidoEntity : itens
+PedidoEntity "1" *-- "0..*" PagamentoEntity : pagamentos
+PedidoEntity "1" *-- "0..*" AlteracaoPedidoEntity : alteracoes
+PedidoEntity "1" *-- "0..*" ExecucaoEtapaEntity : execucoesEtapa
+PedidoEntity "1" *-- "0..*" NecessidadeMaterialEntity : necessidadesMaterial
+PedidoEntity "1" *-- "0..1" EntregaEntity : entrega
+
+' ---- associações do pedido ----
+PedidoEntity "0..*" --> "1" ClienteEntity : cliente
+PedidoEntity "0..*" --> "1" FuncionarioEntity : atendente
+PedidoEntity "0..*" --> "1" PoliticaAlteracaoEntity : politicaAlteracao
+
+' ---- catálogo e produção ----
+ItemPedidoEntity "0..*" --> "1" ProdutoEntity : produto
+ProdutoEntity "0..*" -- "0..*" MaterialEntity : materiaisPadrao
+NecessidadeMaterialEntity "0..*" --> "1" MaterialEntity : material
+ExecucaoEtapaEntity "0..*" --> "1" EtapaProducaoEntity : etapa
+ExecucaoEtapaEntity "0..*" --> "0..1" FuncionarioEntity : responsavel
+
+' ---- responsáveis ----
+PagamentoEntity "0..*" --> "1" FuncionarioEntity : registradoPor
+PagamentoEntity "0..*" --> "0..1" FuncionarioEntity : conferidoPor
+AlteracaoPedidoEntity "0..*" --> "1" FuncionarioEntity : solicitadaPor
+AlteracaoPedidoEntity "0..*" --> "0..1" FuncionarioEntity : confirmadaPor
+EntregaEntity "0..*" --> "0..1" FuncionarioEntity : responsavel
+
+' ---- atendimento ----
+ContatoEntity "0..*" --> "1" ClienteEntity : cliente
+ContatoEntity "0..*" --> "0..1" PedidoEntity : pedido
+ContatoEntity "0..*" --> "0..1" FuncionarioEntity : tratadoPor
+
+@enduml
