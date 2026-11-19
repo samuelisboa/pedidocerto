@@ -122,3 +122,4 @@ Java 21 · Spring Boot 4.1.1 · Spring Data JPA (Hibernate) · H2 (desenvolvimen
 ## Fora do escopo desta etapa
 
 Controllers, services, repositórios, DTOs, autenticação, integração com WhatsApp e migrações Flyway.
+Ajuste na funcionalidade de cadastro de clientes e produto 
