@@ -3,7 +3,7 @@
 Sistema de gestão de encomendas personalizadas para uma pequena empresa que recebe pedidos por WhatsApp, Instagram e balcão.
 Projeto em equipe da disciplina de desenvolvimento de software (Uniesp).
 
-> **Integrantes:** [nome 1] · [nome 2] · [nome 3] · [nome 4]
+> **Integrantes:** Samuel Rodrigues Marques · Lucas Lucena · Leticia Sette · Davi Sprakel · Flavio Roberto
 
 ## Problema
 
