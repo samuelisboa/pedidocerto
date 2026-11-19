@@ -26,8 +26,7 @@ O PedidoCerto cria uma **ficha única por pedido** e coloca as regras do negóci
 
 ## Etapa 2: modelagem do domínio
 
-Esta etapa entrega **apenas o domínio**: entidades JPA, atributos, relacionamentos e métodos modificadores de estado.
-Controllers, services e endpoints ficam para as próximas etapas.
+A Etapa 2 entregou **o domínio**: entidades JPA, atributos, relacionamentos e métodos modificadores de estado.
 
 - **Entidades (15):** `Cliente`, `Funcionario`, `Produto`, `Material`, `NecessidadeMaterial`, `CapacidadeDia`, `EtapaProducao`,
   `ExecucaoEtapa`, `Pedido`, `ItemPedido`, `AlteracaoPedido`, `Entrega`, `PoliticaAlteracao`, `Pagamento`, `Contato`,
@@ -89,8 +88,8 @@ src/main/java/br/edu/uniesp/pedidocerto
     └── atendimento/entity/    ContatoEntity
 ```
 
-Nas próximas etapas, cada pacote de funcionalidade ganha as demais camadas ao lado de `entity`:
-`repository/`, `service/`, `controller/` e `dto/` (por exemplo `internal/pedido/service/PedidoService.java`).
+Na Etapa 3, cada pacote de funcionalidade ganhou as demais camadas ao lado de `entity`:
+`repository/`, `service/`, `controller/` e `dto/` (por exemplo `internal/pedido/service/PedidoCadastroService.java`).
 
 ## Como executar
 
@@ -119,6 +118,24 @@ No Windows, use `mvnw.cmd` no lugar de `./mvnw`.
 
 Java 21 · Spring Boot 4.1.1 · Spring Data JPA (Hibernate) · H2 (desenvolvimento) · Lombok · JUnit 5 · Maven
 
-## Fora do escopo desta etapa
+## Etapa 3: primeiras funcionalidades (API REST)
 
-Controllers, services, repositórios, DTOs, autenticação, integração com WhatsApp e migrações Flyway.
+O planejamento, as dependências e a divisão entre os integrantes estão em [`docs/planejamento.md`](docs/planejamento.md).
+Cada funcionalidade foi desenvolvida em uma branch própria e integrada por Pull Request, seguindo a arquitetura em camadas
+(`controller → service → repository → entity`, com DTOs nas bordas).
+
+| Integrante | Branch | Endpoints |
+|---|---|---|
+| Lucas Lucena | `feature/cadastro-clientes-produtos` | `/clientes`, `/produtos`, `/funcionarios` |
+| Samuel Rodrigues Marques | `feature/cadastro-encomendas` | `POST /pedidos`, `/pedidos/{id}/itens`, `/aprovar`, `/cancelar` |
+| Leticia Sette | `feature/consulta-pedidos` | `GET /pedidos`, `GET /pedidos/{id}`, `GET /pedidos/painel` |
+| Davi Sprakel | `feature/controle-pagamentos` | `/pedidos/{id}/pagamentos`, `/pedidos/{id}/saldo`, `/pedidos/{id}/entrega` |
+| Flavio Roberto | `feature/alteracoes-producao` | `/pedidos/{id}/alteracoes/*`, `/pedidos/{id}/producao/*`, `GET /etapas-producao` |
+
+Erros de regra de negócio retornam **422**, recurso inexistente **404** e dados inválidos **400**, em um corpo padronizado
+(`status`, `mensagem`, `detalhes`, `em`).
+
+## Fora do escopo por enquanto
+
+Autenticação, integração com WhatsApp, controle de estoque e agenda de capacidade pela API, e migrações Flyway
+(o esquema ainda é gerado pelo Hibernate no H2 em memória).
